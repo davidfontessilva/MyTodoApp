@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace MyTodoApp.Models
 {
@@ -19,5 +20,8 @@ namespace MyTodoApp.Models
 
         [DisplayName("Última atualização")]
         public DateTime DateUpdated { get; set; } = DateTime.Now;
+
+        [ValidateNever]
+        public string User { get; set; }
     }
 }

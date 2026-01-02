@@ -4,12 +4,16 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using MyTodoApp.Data;
 using MyTodoApp.Models;
 
 namespace MyTodoApp
 {
+
+    [Authorize]
+
     public class TodoController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -22,7 +26,9 @@ namespace MyTodoApp
         // GET: Todo
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Todos.ToListAsync());
+            return View(await _context.Todos.AsNoTracking()
+                .Where(x => x.User == User.Identity.Name)
+                .ToListAsync());
         }
 
         // GET: Todo/Details/5
@@ -36,6 +42,11 @@ namespace MyTodoApp
             var todo = await _context.Todos
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (todo == null)
+            {
+                return NotFound();
+            }
+
+            if(todo.User != User.Identity.Name)
             {
                 return NotFound();
             }
@@ -58,6 +69,7 @@ namespace MyTodoApp
         {
             if (ModelState.IsValid)
             {
+                todo.User = User.Identity.Name;
                 _context.Add(todo);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -78,6 +90,12 @@ namespace MyTodoApp
             {
                 return NotFound();
             }
+
+            if (todo.User != User.Identity.Name)
+            {
+                return NotFound();
+            }
+
             return View(todo);
         }
 
@@ -86,7 +104,7 @@ namespace MyTodoApp
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Done,DateCreated,DateUpdated")] Todo todo)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Done")] Todo todo)
         {
             if (id != todo.Id)
             {
@@ -97,6 +115,8 @@ namespace MyTodoApp
             {
                 try
                 {
+                    todo.User = User.Identity.Name;
+                    todo.DateUpdated = DateTime.Now;
                     _context.Update(todo);
                     await _context.SaveChangesAsync();
                 }
@@ -127,6 +147,11 @@ namespace MyTodoApp
             var todo = await _context.Todos
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (todo == null)
+            {
+                return NotFound();
+            }
+
+            if (todo.User != User.Identity.Name)
             {
                 return NotFound();
             }
